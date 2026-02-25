@@ -1,13 +1,72 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dao-yu-101</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .games {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .game {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .game a {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 16px;
+      background: #38bdf8;
+      color: #020617;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .game a:hover {
+      background: #0ea5e9;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎮 Browser Games</h1>
+
+  <div class="games">
+    <div class="game">
+      <h2>Snake</h2>
+      <a href="games/snake/index.html">Play</a>
+    </div>
+
+    <div class="game">
+      <h2>Pong</h2>
+      <a href="games/pong/index.html">Play</a>
+    </div>
+
+    <div class="game">
+      <h2>Tetris</h2>
+      <a href="games/tetris/index.html">Play</a>
+    </div>
+  </div>
+
+</body>
 </html>
