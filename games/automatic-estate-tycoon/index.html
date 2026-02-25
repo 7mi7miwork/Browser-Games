@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Tycoon - Auto-Runner</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --bg: #eef2f3;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding-bottom: 40px; /* Platz für Footer */
+        }
+
+        h1 {
+            color: var(--text);
+            text-align: center;
+            margin: 10px 0;
+            font-size: 1.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        
+        /* Header Styling */
+        .header-container {
+            position: relative;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .header-stat { 
+            font-weight: bold; 
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+        
+        /* Status Indicator */
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            animation: pulse 1s infinite;
+        }
+        .dot.paused {
+            background-color: var(--danger);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Main Grid Layout */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .section-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            max-height: 400px;
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--text);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 5;
+            font-weight: bold;
+        }
+
+        /* Menu Buttons */
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .menu button {
+            padding: 12px 5px;
+            background-color: #ecf0f1;
+            color: var(--text);
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            white-space: normal;
+            line-height: 1.2;
+        }
+
+        .menu button:active {
+            transform: scale(0.98);
+        }
+
+        .menu button:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+
+        .menu button.pause-btn {
+            background-color: var(--warning);
+            color: white;
+            border: none;
+            font-weight: bold;
+            grid-column: span 2;
+        }
+        
+        .menu button.pause-btn.paused {
+            background-color: #95a5a6;
+        }
+
+        /* Item Cards */
+        .item-card {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .item-card strong { color: var(--text); }
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+        
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal h2 { margin-top: 0; color: var(--text); font-size: 1.3rem; }
+        .modal button {
+            margin-top: 15px;
+            padding: 12px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+        }
+        .modal button.cancel { background-color: #95a5a6; }
+        
+        input[type="number"] {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            width: 100px;
+            margin-right: 5px;
+            font-size: 1rem;
+        }
+        
+        .tooltip {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-top: 5px;
+            font-style: italic;
+            background: #f1f1f1;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        /* Toast Notification */
+        #toastContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            width: 300px;
+        }
+        .toast {
+            background-color: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s, fadeOut 0.3s 4.7s forwards;
+            font-size: 0.9rem;
+        }
+        .toast.success { border-left: 5px solid var(--success); }
+        .toast.danger { border-left: 5px solid var(--danger); }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Language Selector */
+        .lang-selector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            display: flex;
+            gap: 5px;
+        }
+        .lang-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .lang-btn.active {
+            background: white;
+            color: var(--primary-dark);
+        }
+
+        /* Footer Styling */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #95a5a6;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .footer span {
+            color: var(--primary);
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        
+        @media (max-width: 900px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+            .section-box {
+                max-height: 300px;
+            }
+            .header-container {
+                grid-template-columns: 1fr 1fr;
+                padding-top: 25px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 5px; }
+            .container { padding: 15px; }
+            h1 { font-size: 1.2rem; }
+            
+            .header-container {
+                grid-template-columns: 1fr;
+                gap: 5px;
+                padding-top: 30px;
+            }
+            
+            .status-indicator {
+                top: 5px;
+                right: 5px;
+                font-size: 0.65rem;
+            }
+            
+            .lang-selector {
+                top: 5px;
+                left: 5px;
+            }
+
+            .menu {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .menu button.pause-btn {
+                grid-column: span 2;
+            }
+
+            .item-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .item-card div:last-child {
+                text-align: right;
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="toastContainer"></div>
+
+    <div class="container">
+        <h1 data-i18n="title">🏢 Business Tycoon <span style="font-size:0.5em; vertical-align: middle; background:#f1c40f; color:#333; padding:2px 6px; border-radius:4px;">AUTO</span></h1>
+        <div class="subtitle" data-i18n="subtitle">Das Spiel läuft automatisch. Pausiere zum Handeln!</div>
+        
+        <!-- Header Container -->
+        <div class="header-container">
+            <!-- Language Selector -->
+            <div class="lang-selector">
+                <button class="lang-btn" onclick="setLanguage('de')">DE</button>
+                <button class="lang-btn" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn" onclick="setLanguage('zh')">繁體</button>
+            </div>
+
+            <div class="status-indicator" id="gameStatus">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText" data-i18n="status_running">Läuft</span>
+            </div>
+            
+            <div class="header-stat">💰 <span data-i18n="cash">Bargeld</span>: <span id="stat-cash">0€</span></div>
+            <div class="header-stat">📈 <span data-i18n="networth">Nettovermögen</span>: <span id="stat-networth">0€</span></div>
+            <div class="header-stat">📅 <span data-i18n="date">Datum</span>: <span id="stat-date">01.2024</span></div>
+            <div class="header-stat">🏦 <span data-i18n="debt">Schulden</span>: <span id="stat-loan">0€</span></div>
+        </div>
+
+        <div class="grid-layout">
+            <!-- Spalte 1: Immobilien -->
+            <div>
+                <div class="section-box">
+                    <div class="section-title" data-i18n="properties_title">🏠 Immobilien</div>
+                    <div id="propertiesList"></div>
+                    <div id="propertyStats" style="margin-top:10px; font-size:0.8em; color:#555;"></div>
+                </div>
+            </div>
+
+            <!-- Spalte 2: Unternehmen -->
+            <div>
+                <div class="section-box">
+                    <div class="section-title" data-i18n="companies_title">🏭 Unternehmen</div>
+                    <div id="companiesList"></div>
+                    <div id="companyStats" style="margin-top:10px; font-size:0.8em; color:#555;"></div>
+                </div>
+            </div>
+
+            <!-- Spalte 3: Finanzen -->
+            <div>
+                <div class="section-box">
+                    <div class="section-title" data-i18n="finance_title">📊 Finanzen</div>
+                    <div id="stocksList"></div>
+                    <div id="etfList" style="margin-top:10px;"></div>
+                    <div id="savingsInfo" style="margin-top:5px; font-size:0.8em; color:#555;"></div>
+                </div>
+
+                <div class="section-box">
+                    <div class="section-title" data-i18n="loans_title">🏦 Kredite & Wirtschaft</div>
+                    <div id="loanInfo"></div>
+                    <div id="economyInfo" style="margin-top:10px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu">
+            <button class="pause-btn" id="pauseBtn" onclick="togglePause()">⏸️ <span data-i18n="btn_pause">Pause</span></button>
+            
+            <!-- Immobilien Buttons -->
+            <button onclick="openBuyPropertyModal()">🏠 <span data-i18n="btn_buy_house">Haus kaufen</span></button>
+            <button onclick="openSellPropertyModal()">💸 <span data-i18n="btn_sell_house">Verkaufen</span></button>
+            <button onclick="openUpgradePropertyModal()">🔨 <span data-i18n="btn_upgrade">Renovieren</span></button>
+            
+            <!-- Firmen Buttons -->
+            <button onclick="openBuyCompanyModal()">🏭 <span data-i18n="btn_start_company">Firma gründen</span></button>
+            <button onclick="openUpgradeCompanyModal()">🚀 <span data-i18n="btn_expand_company">Erweitern</span></button>
+            
+            <!-- Finanzen Buttons -->
+            <button onclick="openBuyStockModal()">📈 <span data-i18n="btn_buy_stock">Aktien</span></button>
+            <button onclick="openBuyEtfModal()">🌍 <span data-i18n="btn_buy_etf">ETF</span></button>
+            <button onclick="openLoanModal()">💰 <span data-i18n="btn_loan">Kredit</span></button>
+            <button onclick="openRepayLoanModal()">📉 <span data-i18n="btn_repay">Tilgen</span></button>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Created by <span>Michael (其米）</span>
+        </div>
+    </div>
+
+<!-- Modals -->
+<!-- Immobilien Modals -->
+<div id="buyPropertyModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_buy_prop_title">Immobilie kaufen</h2>
+        <div class="tooltip" data-i18n="tooltip_property">Immobilien bringen monatliche Mieteinnahmen, steigen im Wert, kosten aber Instandhaltung.</div>
+        <div id="buyPropertyContent" style="margin-top:15px;"></div>
+        <button class="cancel" onclick="closeModal('buyPropertyModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+<div id="sellPropertyModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_sell_prop_title">Immobilie verkaufen</h2>
+        <div id="sellPropertyContent"></div>
+        <button class="cancel" onclick="closeModal('sellPropertyModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+<div id="upgradePropertyModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_upgrade_title">Immobilie renovieren</h2>
+        <div class="tooltip" data-i18n="tooltip_upgrade">Erhöht die Miete und den Wert, kostet aber einmalig Geld.</div>
+        <div id="upgradePropertyContent"></div>
+        <button class="cancel" onclick="closeModal('upgradePropertyModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+
+<!-- Firmen Modals -->
+<div id="buyCompanyModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_start_company_title">Firma gründen</h2>
+        <div class="tooltip" data-i18n="tooltip_company">Unternehmen generieren monatlichen Gewinn. Upgrades steigern die Effizienz.</div>
+        <div id="buyCompanyContent" style="margin-top:15px;"></div>
+        <button class="cancel" onclick="closeModal('buyCompanyModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+<div id="upgradeCompanyModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_expand_company_title">Firma erweitern</h2>
+        <div class="tooltip" data-i18n="tooltip_expand">Investiere in Technologie oder Marketing, um den Gewinn zu steigern.</div>
+        <div id="upgradeCompanyContent"></div>
+        <button class="cancel" onclick="closeModal('upgradeCompanyModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+
+<!-- Finanzen Modals -->
+<div id="buyStockModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_buy_stock_title">Aktien kaufen</h2>
+        <div class="tooltip" data-i18n="tooltip_stock">Einzelaktien sind riskant, zahlen aber oft hohe Dividenden.</div>
+        <div id="buyStockContent"></div>
+        <button class="cancel" onclick="closeModal('buyStockModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+<div id="buyEtfModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_buy_etf_title">Welt-ETF kaufen</h2>
+        <div class="tooltip" data-i18n="tooltip_etf">Ein ETF bildet den ganzen Markt ab. Geringeres Risiko, stetige Dividenden.</div>
+        <p><span data-i18n="etf_current_price">Aktueller Kurs</span>: <strong id="etfPriceDisplay">100€</strong></p>
+        <p><span data-i18n="etf_dividend">Dividendenrendite</span>: <strong>2.5% pro Jahr</strong></p>
+        <input type="number" id="buyEtfAmount" placeholder="Anzahl" min="1">
+        <button onclick="buyEtf()" data-i18n="btn_buy">Kaufen</button>
+        <button class="cancel" onclick="closeModal('buyEtfModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+<div id="loanModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_loan_title">Kredit aufnehmen</h2>
+        <div class="tooltip" data-i18n="tooltip_loan">Nutze Fremdkapital, um mehr zu kaufen. Aber Vorsicht vor den Zinsen!</div>
+        <div id="loanContent"></div>
+        <button class="cancel" onclick="closeModal('loanModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+<div id="repayLoanModal" class="modal">
+    <div class="modal-content">
+        <h2 data-i18n="modal_repay_title">Kredit zurückzahlen</h2>
+        <div id="repayLoanContent"></div>
+        <button class="cancel" onclick="closeModal('repayLoanModal')" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+</div>
+
+<script>
+    // --- TRANSLATIONS ---
+    const translations = {
+        de: {
+            title: "🏢 Business Tycoon",
+            subtitle: "Das Spiel läuft automatisch. Pausiere zum Handeln!",
+            status_running: "Läuft",
+            status_paused: "Pausiert",
+            cash: "Bargeld",
+            networth: "Nettovermögen",
+            date: "Datum",
+            debt: "Schulden",
+            properties_title: "🏠 Immobilien",
+            companies_title: "🏭 Unternehmen",
+            finance_title: "📊 Finanzen",
+            loans_title: "🏦 Kredite & Wirtschaft",
+            btn_pause: "Pause",
+            btn_resume: "Weiter",
+            btn_buy_house: "Haus kaufen",
+            btn_sell_house: "Verkaufen",
+            btn_upgrade: "Renovieren",
+            btn_start_company: "Firma gründen",
+            btn_expand_company: "Erweitern",
+            btn_buy_stock: "Aktien",
+            btn_buy_etf: "ETF",
+            btn_loan: "Kredit",
+            btn_repay: "Tilgen",
+            btn_cancel: "Abbrechen",
+            btn_buy: "Kaufen",
+            tooltip_property: "Immobilien bringen Mieteinnahmen, steigen im Wert, kosten aber Instandhaltung.",
+            tooltip_upgrade: "Erhöht Miete und Wert, kostet aber Geld.",
+            tooltip_company: "Unternehmen generieren Gewinn. Upgrades steigern die Effizienz.",
+            tooltip_expand: "Investiere in Technologie/Marketing, um Gewinn zu steigern.",
+            tooltip_stock: "Einzelaktien sind riskant, zahlen aber oft hohe Dividenden.",
+            tooltip_etf: "ETF bildet den Markt ab. Geringeres Risiko, stetige Dividenden.",
+            tooltip_loan: "Nutze Fremdkapital, um mehr zu kaufen. Vorsicht vor Zinsen!",
+            modal_buy_prop_title: "Immobilie kaufen",
+            modal_sell_prop_title: "Immobilie verkaufen",
+            modal_upgrade_title: "Immobilie renovieren",
+            modal_start_company_title: "Firma gründen",
+            modal_expand_company_title: "Firma erweitern",
+            modal_buy_stock_title: "Aktien kaufen",
+            modal_buy_etf_title: "Welt-ETF kaufen",
+            etf_current_price: "Aktueller Kurs",
+            etf_dividend: "Dividendenrendite",
+            modal_loan_title: "Kredit aufnehmen",
+            modal_repay_title: "Kredit zurückzahlen",
+            msg_not_enough_money: "Nicht genug Geld!",
+            msg_bought: "gekauft!",
+            msg_sold: "Verkaufserlös",
+            msg_upgraded: "Verbessert! Gewinn/Miete steigt.",
+            msg_loan_taken: "Kredit aufgenommen",
+            msg_loan_repaid: "Schulden getilgt",
+            msg_game_over: "GAME OVER! Du bist pleite.",
+            lbl_rent: "Miete",
+            lbl_profit: "Gewinn",
+            lbl_cost: "Kosten",
+            lbl_maint: "Instandhalt.",
+            lbl_level: "Lvl",
+            lbl_dividend: "Div",
+            lbl_shares: "Anteile",
+            lbl_stock_count: "Stk.",
+            lbl_monthly: "/Monat",
+            lbl_total_rent: "Gesamt Miete",
+            lbl_total_profit: "Gesamt Gewinn",
+            lbl_total_cost: "Gesamt Kosten",
+            lbl_no_items: "Keine Objekte.",
+            lbl_no_stocks: "Keine Aktien.",
+            lbl_savings_interest: "Tagesgeld-Zinsen",
+            lbl_current_debt: "Aktuelle Schulden",
+            lbl_monthly_interest: "Monatliche Zinslast",
+            lbl_economy: "Wirtschaft",
+            lbl_inflation: "Inflation",
+            lbl_max_loan: "Maximaler Kreditrahmen",
+            lbl_interest_rate: "Zinssatz",
+            lbl_amount: "Betrag",
+            placeholder_shares: "Anzahl",
+            placeholder_amount: "Betrag",
+            economy_boom: "Boom 🚀",
+            economy_stable: "Stabil ➖",
+            economy_recession: "Rezession 📉",
+            economy_depression: "Depression 🆘"
+        },
+        en: {
+            title: "🏢 Business Tycoon",
+            subtitle: "Game runs automatically. Pause to trade!",
+            status_running: "Running",
+            status_paused: "Paused",
+            cash: "Cash",
+            networth: "Net Worth",
+            date: "Date",
+            debt: "Debt",
+            properties_title: "🏠 Real Estate",
+            companies_title: "🏭 Companies",
+            finance_title: "📊 Finance",
+            loans_title: "🏦 Loans & Economy",
+            btn_pause: "Pause",
+            btn_resume: "Resume",
+            btn_buy_house: "Buy House",
+            btn_sell_house: "Sell",
+            btn_upgrade: "Upgrade",
+            btn_start_company: "Start Co.",
+            btn_expand_company: "Expand",
+            btn_buy_stock: "Stocks",
+            btn_buy_etf: "ETF",
+            btn_loan: "Loan",
+            btn_repay: "Repay",
+            btn_cancel: "Cancel",
+            btn_buy: "Buy",
+            tooltip_property: "Real estate generates rent, appreciates, but costs maintenance.",
+            tooltip_upgrade: "Increases rent/value, costs money.",
+            tooltip_company: "Companies generate profit. Upgrades increase efficiency.",
+            tooltip_expand: "Invest in tech/marketing to boost profit.",
+            tooltip_stock: "Stocks are risky but pay high dividends.",
+            tooltip_etf: "ETF tracks market. Lower risk, steady dividends.",
+            tooltip_loan: "Use leverage to buy more. Beware of interest!",
+            modal_buy_prop_title: "Buy Real Estate",
+            modal_sell_prop_title: "Sell Real Estate",
+            modal_upgrade_title: "Upgrade Property",
+            modal_start_company_title: "Start Company",
+            modal_expand_company_title: "Expand Company",
+            modal_buy_stock_title: "Buy Stocks",
+            modal_buy_etf_title: "Buy World ETF",
+            etf_current_price: "Current Price",
+            etf_dividend: "Dividend Yield",
+            modal_loan_title: "Take Loan",
+            modal_repay_title: "Repay Loan",
+            msg_not_enough_money: "Not enough money!",
+            msg_bought: "bought!",
+            msg_sold: "Sales Proceeds",
+            msg_upgraded: "Upgraded! Profit/Rent increased.",
+            msg_loan_taken: "Loan taken",
+            msg_loan_repaid: "Debt repaid",
+            msg_game_over: "GAME OVER! You are bankrupt.",
+            lbl_rent: "Rent",
+            lbl_profit: "Profit",
+            lbl_cost: "Cost",
+            lbl_maint: "Maint.",
+            lbl_level: "Lvl",
+            lbl_dividend: "Div",
+            lbl_shares: "Shares",
+            lbl_stock_count: "Qty",
+            lbl_monthly: "/Month",
+            lbl_total_rent: "Total Rent",
+            lbl_total_profit: "Total Profit",
+            lbl_total_cost: "Total Costs",
+            lbl_no_items: "No items.",
+            lbl_no_stocks: "No stocks.",
+            lbl_savings_interest: "Savings Interest",
+            lbl_current_debt: "Current Debt",
+            lbl_monthly_interest: "Monthly Interest",
+            lbl_economy: "Economy",
+            lbl_inflation: "Inflation",
+            lbl_max_loan: "Max Loan Limit",
+            lbl_interest_rate: "Interest Rate",
+            lbl_amount: "Amount",
+            placeholder_shares: "Qty",
+            placeholder_amount: "Amount",
+            economy_boom: "Boom 🚀",
+            economy_stable: "Stable ➖",
+            economy_recession: "Recession 📉",
+            economy_depression: "Depression 🆘"
+        },
+        zh: {
+            title: "🏢 商業大亨",
+            subtitle: "遊戲自動運行。暫停以進行交易！",
+            status_running: "運行中",
+            status_paused: "已暫停",
+            cash: "現金",
+            networth: "淨資產",
+            date: "日期",
+            debt: "債務",
+            properties_title: "🏠 房地產",
+            companies_title: "🏭 企業公司",
+            finance_title: "📊 金融投資",
+            loans_title: "🏦 貸款 與 經濟",
+            btn_pause: "暫停",
+            btn_resume: "繼續",
+            btn_buy_house: "買房",
+            btn_sell_house: "賣出",
+            btn_upgrade: "裝修",
+            btn_start_company: "創立公司",
+            btn_expand_company: "擴張業務",
+            btn_buy_stock: "股票",
+            btn_buy_etf: "ETF",
+            btn_loan: "貸款",
+            btn_repay: "還款",
+            btn_cancel: "取消",
+            btn_buy: "購買",
+            tooltip_property: "房地產產生租金，價值隨通脹上升，但需要維護成本。",
+            tooltip_upgrade: "增加租金和價值，但需要費用。",
+            tooltip_company: "企業產生利潤。升級可提高效率和收益。",
+            tooltip_expand: "投資技術或營銷以增加利潤。",
+            tooltip_stock: "個股風險較高，但通常股息較高。",
+            tooltip_etf: "ETF 追蹤整個市場。風險較低，股息穩定。",
+            tooltip_loan: "利用槓桿購買更多資產。但要注意利率！",
+            modal_buy_prop_title: "購買房地產",
+            modal_sell_prop_title: "出售房地產",
+            modal_upgrade_title: "房產裝修",
+            modal_start_company_title: "創立公司",
+            modal_expand_company_title: "擴張公司",
+            modal_buy_stock_title: "購買股票",
+            modal_buy_etf_title: "購買全球 ETF",
+            etf_current_price: "當前價格",
+            etf_dividend: "股息率",
+            modal_loan_title: "申請貸款",
+            modal_repay_title: "歸還貸款",
+            msg_not_enough_money: "資金不足！",
+            msg_bought: "已購買！",
+            msg_sold: "銷售所得",
+            msg_upgraded: "已升級！利潤/租金增加。",
+            msg_loan_taken: "已貸款",
+            msg_loan_repaid: "債務已償還",
+            msg_game_over: "遊戲結束！你已破產。",
+            lbl_rent: "租金",
+            lbl_profit: "利潤",
+            lbl_cost: "成本",
+            lbl_maint: "維護",
+            lbl_level: "等級",
+            lbl_dividend: "股息",
+            lbl_shares: "份額",
+            lbl_stock_count: "股數",
+            lbl_monthly: "/月",
+            lbl_total_rent: "總租金",
+            lbl_total_profit: "總利潤",
+            lbl_total_cost: "總成本",
+            lbl_no_items: "無資產。",
+            lbl_no_stocks: "無股票。",
+            lbl_savings_interest: "儲蓄利息",
+            lbl_current_debt: "當前債務",
+            lbl_monthly_interest: "月度利息",
+            lbl_economy: "經濟",
+            lbl_inflation: "通脹",
+            lbl_max_loan: "最大貸款額度",
+            lbl_interest_rate: "利率",
+            lbl_amount: "金額",
+            placeholder_shares: "數量",
+            placeholder_amount: "金額",
+            economy_boom: "繁榮 🚀",
+            economy_stable: "穩定 ➖",
+            economy_recession: "衰退 📉",
+            economy_depression: "蕭條 🆘"
+        }
+    };
+
+    let currentLang = localStorage.getItem('gameLang') || 'de';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('gameLang', lang);
+        document.documentElement.lang = lang;
+        
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[lang][key]) {
+                if(el.children.length > 0 && el.tagName !== 'BUTTON') {
+                     el.innerHTML = translations[lang][key]; 
+                } else {
+                    el.innerText = translations[lang][key];
+                }
+            }
+        });
+
+        updateUI();
+        updatePauseButton();
+        
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function t(key) {
+        return translations[currentLang][key] || key;
+    }
+
+    // --- SPIELZUSTAND ---
+    const player = {
+        name: "Investor",
+        cash: 50000,
+        loan: 0,
+        loanInterestRate: 0.005,
+        properties: [],
+        companies: [],
+        stocks: {}, 
+        etfShares: 0,
+        month: 1,
+        year: 2024,
+        inflationRate: 0.002,
+        savingsInterest: 0.003
+    };
+
+    const EconomyState = {
+        BOOM: "economy_boom",
+        STABLE: "economy_stable",
+        RECESSION: "economy_recession",
+        DEPRESSION: "economy_depression",
+    };
+
+    let economyState = EconomyState.STABLE;
+    
+    let gameRunning = true;
+    let gameSpeed = 2000;
+    let gameTimer;
+
+    // --- DATEN: IMMOBILIEN ---
+    const availableProperties = [
+        { name: "Kleine Wohnung", type: "Wohnen", basePrice: 80000, rent: 600, maintenance: 100 },
+        { name: "Einfamilienhaus", type: "Wohnen", basePrice: 250000, rent: 1400, maintenance: 300 },
+        { name: "Bürogebäude", type: "Gewerbe", basePrice: 600000, rent: 4500, maintenance: 800 },
+        { name: "Einkaufszentrum", type: "Gewerbe", basePrice: 1500000, rent: 12000, maintenance: 2000 },
+    ];
+
+    // --- DATEN: UNTERNEHMEN ---
+    const availableCompanies = [
+        { name: "Kiosk / Café", type: "Kleingewerbe", basePrice: 20000, profit: 300, maintenance: 50 },
+        { name: "Handwerksbetrieb", type: "Mittelstand", basePrice: 100000, profit: 1200, maintenance: 200 },
+        { name: "Software Firma", type: "Tech", basePrice: 300000, profit: 4000, maintenance: 500 },
+        { name: "Fabrik", type: "Industrie", basePrice: 800000, profit: 9000, maintenance: 1500 },
+        { name: "Großbank", type: "Finanzen", basePrice: 2000000, profit: 25000, maintenance: 4000 },
+    ];
+
+    // --- DATEN: AKTIEN ---
+    const availableStocks = [
+        { name: "TechGiant", price: 150, volatility: 0.15, dividendYield: 0.005 },
+        { name: "AutoCorp", price: 80, volatility: 0.10, dividendYield: 0.015 },
+        { name: "EnergyCo", price: 120, volatility: 0.08, dividendYield: 0.010 },
+        { name: "BankGroup", price: 60, volatility: 0.12, dividendYield: 0.008 },
+    ];
+
+    let etfPrice = 100;
+    const etfDividendYield = 0.002;
+
+    // --- INITIALISIERUNG ---
+    function startGame() {
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            if(btn.innerText.toLowerCase().includes(currentLang === 'zh' ? '繁' : currentLang)) {
+                btn.classList.add('active');
+            }
+        });
+        setLanguage(currentLang);
+
+        player.name = prompt(t('title') + " - " + (currentLang === 'de' ? "Wie heißt du?" : (currentLang === 'en' ? "What is your name?" : "你的名字？")), "Spieler") || "Spieler";
+        updateUI();
+        startGameLoop(); 
+    }
+
+    // --- GAME LOOP ---
+    function startGameLoop() {
+        if (gameTimer) clearTimeout(gameTimer);
+        gameRunning = true;
+        updatePauseButton();
+        gameTimer = setTimeout(tick, gameSpeed);
+    }
+
+    function stopGameLoop() {
+        gameRunning = false;
+        clearTimeout(gameTimer);
+        updatePauseButton();
+    }
+
+    function togglePause() {
+        if (gameRunning) stopGameLoop(); else startGameLoop();
+    }
+
+    function updatePauseButton() {
+        const btn = document.getElementById("pauseBtn");
+        const dot = document.getElementById("statusDot");
+        const text = document.getElementById("statusText");
+        
+        if (gameRunning) {
+            btn.innerHTML = "⏸️ " + t('btn_pause');
+            btn.classList.remove("paused");
+            if(dot) dot.classList.remove("paused");
+            if(text) text.innerText = t('status_running');
+        } else {
+            btn.innerHTML = "▶️ " + t('btn_resume');
+            btn.classList.add("paused");
+            if(dot) dot.classList.add("paused");
+            if(text) text.innerText = t('status_paused');
+        }
+    }
+
+    function tick() {
+        if (!gameRunning) return;
+        nextMonth();
+        gameTimer = setTimeout(tick, gameSpeed);
+    }
+
+    // --- UI UPDATES ---
+    function updateUI() {
+        updateHeaderStats();
+        updatePropertiesList();
+        updateCompaniesList();
+        updateStocksList();
+        updateEtfList();
+        updateLoanInfo();
+    }
+
+    function updateHeaderStats() {
+        const netWorth = calculateNetWorth();
+        document.getElementById('stat-cash').innerText = formatMoney(player.cash);
+        document.getElementById('stat-networth').innerText = formatMoney(netWorth);
+        document.getElementById('stat-date').innerText = `${player.month}. ${player.year}`;
+        document.getElementById('stat-loan').innerText = formatMoney(player.loan);
+    }
+
+    function updatePropertiesList() {
+        const div = document.getElementById("propertiesList");
+        if (player.properties.length === 0) {
+            div.innerHTML = `<p style='color:#7f8c8d; font-style:italic;'>${t('lbl_no_items')}</p>`;
+            document.getElementById("propertyStats").innerHTML = "";
+            return;
+        }
+        
+        let html = "";
+        let totalRent = 0;
+        let totalMaint = 0;
+
+        player.properties.forEach((prop, idx) => {
+            totalRent += prop.rent;
+            totalMaint += prop.maintenance;
+            html += `
+                <div class="item-card">
+                    <div>
+                        <strong>${prop.name}</strong><br>
+                        <small>${t('lbl_rent')}: +${formatMoney(prop.rent)} | ${t('lbl_maint')}: -${formatMoney(prop.maintenance)}</small>
+                    </div>
+                    <div style="text-align:right">
+                        <div>${formatMoney(prop.basePrice)}</div>
+                        <small>${t('lbl_level')} ${prop.level || 1}</small>
+                    </div>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+        document.getElementById("propertyStats").innerHTML = `${t('lbl_total_rent')}: <span class="positive">+${formatMoney(totalRent)}</span> | ${t('lbl_total_cost')}: <span class="negative">-${formatMoney(totalMaint)}</span>`;
+    }
+
+    function updateCompaniesList() {
+        const div = document.getElementById("companiesList");
+        if (player.companies.length === 0) {
+            div.innerHTML = `<p style='color:#7f8c8d; font-style:italic;'>${t('lbl_no_items')}</p>`;
+            document.getElementById("companyStats").innerHTML = "";
+            return;
+        }
+        
+        let html = "";
+        let totalProfit = 0;
+        let totalMaint = 0;
+
+        player.companies.forEach((comp, idx) => {
+            totalProfit += comp.profit;
+            totalMaint += comp.maintenance;
+            html += `
+                <div class="item-card">
+                    <div>
+                        <strong>${comp.name}</strong> <small>(${comp.type})</small><br>
+                        <small>${t('lbl_profit')}: +${formatMoney(comp.profit)} | ${t('lbl_maint')}: -${formatMoney(comp.maintenance)}</small>
+                    </div>
+                    <div style="text-align:right">
+                        <div>${formatMoney(comp.basePrice)}</div>
+                        <small>${t('lbl_level')} ${comp.level || 1}</small>
+                    </div>
+                </div>
+            `;
+        });
+        div.innerHTML = html;
+        document.getElementById("companyStats").innerHTML = `${t('lbl_total_profit')}: <span class="positive">+${formatMoney(totalProfit)}</span> | ${t('lbl_total_cost')}: <span class="negative">-${formatMoney(totalMaint)}</span>`;
+    }
+
+    function updateStocksList() {
+        const div = document.getElementById("stocksList");
+        let html = "";
+        let hasStocks = false;
+        
+        for (const [name, amount] of Object.entries(player.stocks)) {
+            if (amount > 0) {
+                hasStocks = true;
+                const stock = availableStocks.find(s => s.name === name);
+                const value = amount * stock.price;
+                html += `
+                    <div class="item-card">
+                        <div>
+                            <strong>${name}</strong> (${amount} ${t('lbl_stock_count')})<br>
+                            <small>${t('etf_current_price')}: ${formatMoney(stock.price)}</small>
+                        </div>
+                        <div><strong>${formatMoney(value)}</strong></div>
+                    </div>
+                `;
+            }
+        }
+        if (!hasStocks) html = `<p style='color:#7f8c8d; font-style:italic;'>${t('lbl_no_stocks')}</p>`;
+        div.innerHTML = html;
+    }
+
+    function updateEtfList() {
+        const div = document.getElementById("etfList");
+        const value = player.etfShares * etfPrice;
+        div.innerHTML = `
+            <div class="item-card">
+                <div>
+                    <strong>Welt-ETF</strong> (${player.etfShares} ${t('lbl_shares')})<br>
+                    <small>${t('etf_current_price')}: ${formatMoney(etfPrice)}</small>
+                </div>
+                <div><strong>${formatMoney(value)}</strong></div>
+            </div>
+        `;
+        const savingsInterest = (player.cash * player.savingsInterest).toFixed(2);
+        document.getElementById("savingsInfo").innerHTML = `${t('lbl_savings_interest')}: <span class="positive">+${formatMoney(savingsInterest)}${t('lbl_monthly')}</span>`;
+    }
+
+    function updateLoanInfo() {
+        const div = document.getElementById("loanInfo");
+        const interestCost = (player.loan * player.loanInterestRate).toFixed(2);
+        div.innerHTML = `
+            <div class="item-card" style="background:#fff5f5; border-color:#ffcccc;">
+                <div>
+                    <strong>${t('lbl_current_debt')}</strong><br>
+                    <small>${t('lbl_monthly_interest')}: -${formatMoney(interestCost)}</small>
+                </div>
+                <div class="negative"><strong>${formatMoney(player.loan)}</strong></div>
+            </div>
+        `;
+        document.getElementById("economyInfo").innerHTML = `${t('lbl_economy')}: <strong>${t(economyState)}</strong> | ${t('lbl_inflation')}: ${(player.inflationRate*1200).toFixed(1)}% p.a.`;
+    }
+
+    // --- LOGIK ---
+    function calculateNetWorth() {
+        let propValue = player.properties.reduce((sum, p) => sum + p.basePrice, 0);
+        let compValue = player.companies.reduce((sum, c) => sum + c.basePrice, 0);
+        let stockValue = 0;
+        for (const [name, amount] of Object.entries(player.stocks)) {
+            const stock = availableStocks.find(s => s.name === name);
+            if(stock) stockValue += amount * stock.price;
+        }
+        let etfValue = player.etfShares * etfPrice;
+        return player.cash + propValue + compValue + stockValue + etfValue - player.loan;
+    }
+
+    function formatMoney(amount) {
+        return amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    }
+
+    function showToast(message, type = "success") {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.innerHTML = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function nextMonth() {
+        player.month++;
+        if (player.month > 12) {
+            player.month = 1;
+            player.year++;
+            player.inflationRate = 0.001 + Math.random() * 0.003; 
+        }
+
+        updateEconomy();
+
+        let income = 0;
+        let expenses = 0;
+
+        // Immobilien
+        const rentIncome = player.properties.reduce((sum, p) => sum + p.rent, 0);
+        income += rentIncome;
+        const propMaint = player.properties.reduce((sum, p) => sum + p.maintenance, 0);
+        expenses += propMaint;
+
+        // Unternehmen
+        const compProfit = player.companies.reduce((sum, c) => sum + c.profit, 0);
+        income += compProfit;
+        const compMaint = player.companies.reduce((sum, c) => sum + c.maintenance, 0);
+        expenses += compMaint;
+
+        // Kredite
+        const loanInterest = player.loan * player.loanInterestRate;
+        expenses += loanInterest;
+
+        // Aktien Dividenden
+        let stockDividends = 0;
+        for (const [name, amount] of Object.entries(player.stocks)) {
+            const stock = availableStocks.find(s => s.name === name);
+            if(stock) stockDividends += amount * stock.price * stock.dividendYield;
+        }
+        income += stockDividends;
+
+        // ETF Dividenden
+        const etfDividends = (player.etfShares * etfPrice) * etfDividendYield;
+        income += etfDividends;
+
+        // Tagesgeld
+        const savingsInterest = player.cash * player.savingsInterest;
+        income += savingsInterest;
+
+        // Zufall
+        if (Math.random() < 0.1 && (player.properties.length > 0 || player.companies.length > 0)) {
+            const repairCost = 500 + Math.random() * 1000;
+            expenses += repairCost;
+            showToast(`⚠️ Repair: -${formatMoney(repairCost)}`, "danger");
+        }
+
+        const balance = income - expenses;
+        player.cash += balance;
+
+        // Preise anpassen
+        player.properties.forEach(p => {
+            p.basePrice *= (1 + player.inflationRate);
+            p.rent *= (1 + (player.inflationRate * 0.5));
+        });
+        player.companies.forEach(c => {
+            c.basePrice *= (1 + player.inflationRate);
+            c.profit *= (1 + (player.inflationRate * 0.5));
+        });
+
+        // Aktien/ETF Kurse
+        availableStocks.forEach(stock => {
+            let change = (Math.random() - 0.5) * 2 * stock.volatility;
+            if (economyState === EconomyState.BOOM) change += 0.05;
+            if (economyState === EconomyState.RECESSION) change -= 0.05;
+            if (economyState === EconomyState.DEPRESSION) change -= 0.15;
+            stock.price *= (1 + change);
+            if(stock.price < 1) stock.price = 1;
+        });
+
+        let etfChange = (Math.random() - 0.45) * 0.04;
+        if (economyState === EconomyState.BOOM) etfChange += 0.02;
+        if (economyState === EconomyState.DEPRESSION) etfChange -= 0.05;
+        etfPrice *= (1 + etfChange);
+
+        if (player.cash < -10000) {
+            stopGameLoop();
+            alert(t('msg_game_over'));
+            startGame();
+            return;
+        }
+
+        updateUI();
+        
+        if (player.month === 1) {
+            const color = balance >= 0 ? "success" : "danger";
+            const sign = balance >= 0 ? "+" : "";
+            showToast(`📅 Year ${player.year}: Balance ${sign}${formatMoney(balance)}`, color);
+        }
+    }
+
+    function updateEconomy() {
+        const rand = Math.random();
+        if (rand < 0.1) economyState = EconomyState.DEPRESSION;
+        else if (rand < 0.3) economyState = EconomyState.RECESSION;
+        else if (rand < 0.8) economyState = EconomyState.STABLE;
+        else economyState = EconomyState.BOOM;
+    }
+
+    // --- MODAL FUNKTIONEN ---
+    function openModal(id) { stopGameLoop(); document.getElementById(id).style.display = "flex"; }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; startGameLoop(); }
+
+    // Immobilien
+    function openBuyPropertyModal() {
+        const content = document.getElementById("buyPropertyContent");
+        let html = "";
+        availableProperties.forEach((prop, idx) => {
+            html += `
+                <div class="item-card" style="display:block;">
+                    <strong>${prop.name}</strong> (${prop.type})<br>
+                    ${t('etf_current_price')}: ${formatMoney(prop.basePrice)}<br>
+                    ${t('lbl_rent')}: ${formatMoney(prop.rent)} | ${t('lbl_maint')}: ${formatMoney(prop.maintenance)}<br>
+                    <button onclick="buyProperty(${idx})" style="margin-top:5px; font-size:0.8em; padding:5px 10px;">${t('btn_buy')}</button>
+                </div>
+            `;
+        });
+        content.innerHTML = html;
+        openModal("buyPropertyModal");
+    }
+    function buyProperty(idx) {
+        const prop = availableProperties[idx];
+        if (player.cash >= prop.basePrice) {
+            player.cash -= prop.basePrice;
+            player.properties.push({ ...prop, level: 1, id: Date.now() });
+            updateUI();
+            closeModal("buyPropertyModal");
+            showToast(`✅ ${prop.name} ${t('msg_bought')}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+    function openSellPropertyModal() {
+        const content = document.getElementById("sellPropertyContent");
+        if(player.properties.length === 0) { content.innerHTML = `<p>${t('lbl_no_items')}</p>`; }
+        else {
+            let html = "";
+            player.properties.forEach((prop, idx) => {
+                const sellPrice = prop.basePrice * 0.95;
+                html += `<div class="item-card"><div>${prop.name}</div><button onclick="sellProperty(${idx})" style="background:#e74c3c; font-size:0.8em; padding:5px 10px;">${t('btn_sell_house')} ${formatMoney(sellPrice)}</button></div>`;
+            });
+            content.innerHTML = html;
+        }
+        openModal("sellPropertyModal");
+    }
+    function sellProperty(idx) {
+        const prop = player.properties[idx];
+        const sellPrice = prop.basePrice * 0.95;
+        player.cash += sellPrice;
+        player.properties.splice(idx, 1);
+        updateUI();
+        closeModal("sellPropertyModal");
+        showToast(`✅ ${t('msg_sold')}: ${formatMoney(sellPrice)}`, "success");
+    }
+    function openUpgradePropertyModal() {
+        const content = document.getElementById("upgradePropertyContent");
+        if(player.properties.length === 0) { content.innerHTML = `<p>${t('lbl_no_items')}</p>`; }
+        else {
+            let html = "";
+            player.properties.forEach((prop, idx) => {
+                const cost = prop.basePrice * 0.1;
+                html += `<div class="item-card"><div>${prop.name} (${t('lbl_level')} ${prop.level})</div><button onclick="upgradeProperty(${idx})" style="font-size:0.8em; padding:5px 10px;">${t('btn_upgrade')} (${formatMoney(cost)})</button></div>`;
+            });
+            content.innerHTML = html;
+        }
+        openModal("upgradePropertyModal");
+    }
+    function upgradeProperty(idx) {
+        const prop = player.properties[idx];
+        const cost = prop.basePrice * 0.1;
+        if(player.cash >= cost) {
+            player.cash -= cost;
+            prop.level++;
+            prop.basePrice *= 1.05;
+            prop.rent *= 1.10;
+            prop.maintenance *= 1.05;
+            updateUI();
+            closeModal("upgradePropertyModal");
+            showToast(`✅ ${t('msg_upgraded')}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+
+    // Unternehmen
+    function openBuyCompanyModal() {
+        const content = document.getElementById("buyCompanyContent");
+        let html = "";
+        availableCompanies.forEach((comp, idx) => {
+            html += `
+                <div class="item-card" style="display:block;">
+                    <strong>${comp.name}</strong> (${comp.type})<br>
+                    ${t('etf_current_price')}: ${formatMoney(comp.basePrice)}<br>
+                    ${t('lbl_profit')}: ${formatMoney(comp.profit)} | ${t('lbl_maint')}: ${formatMoney(comp.maintenance)}<br>
+                    <button onclick="buyCompany(${idx})" style="margin-top:5px; font-size:0.8em; padding:5px 10px;">${t('btn_buy')}</button>
+                </div>
+            `;
+        });
+        content.innerHTML = html;
+        openModal("buyCompanyModal");
+    }
+    function buyCompany(idx) {
+        const comp = availableCompanies[idx];
+        if (player.cash >= comp.basePrice) {
+            player.cash -= comp.basePrice;
+            player.companies.push({ ...comp, level: 1, id: Date.now() });
+            updateUI();
+            closeModal("buyCompanyModal");
+            showToast(`✅ ${comp.name} ${t('msg_bought')}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+    function openUpgradeCompanyModal() {
+        const content = document.getElementById("upgradeCompanyContent");
+        if(player.companies.length === 0) { content.innerHTML = `<p>${t('lbl_no_items')}</p>`; }
+        else {
+            let html = "";
+            player.companies.forEach((comp, idx) => {
+                const cost = comp.basePrice * 0.15;
+                html += `<div class="item-card"><div>${comp.name} (${t('lbl_level')} ${comp.level})</div><button onclick="upgradeCompany(${idx})" style="font-size:0.8em; padding:5px 10px;">${t('btn_expand_company')} (${formatMoney(cost)})</button></div>`;
+            });
+            content.innerHTML = html;
+        }
+        openModal("upgradeCompanyModal");
+    }
+    function upgradeCompany(idx) {
+        const comp = player.companies[idx];
+        const cost = comp.basePrice * 0.15;
+        if(player.cash >= cost) {
+            player.cash -= cost;
+            comp.level++;
+            comp.basePrice *= 1.10;
+            comp.profit *= 1.20;
+            comp.maintenance *= 1.10;
+            updateUI();
+            closeModal("upgradeCompanyModal");
+            showToast(`✅ ${t('msg_upgraded')}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+
+    // Finanzen
+    function openBuyStockModal() {
+        const content = document.getElementById("buyStockContent");
+        let html = "";
+        availableStocks.forEach((stock, idx) => {
+            html += `
+                <div class="item-card">
+                    <div><strong>${stock.name}</strong><br><small>${t('etf_current_price')}: ${formatMoney(stock.price)}</small></div>
+                    <div><input type="number" id="buyStockQty${idx}" value="1" min="1" style="width:50px;"><button onclick="buyStock(${idx})" style="font-size:0.8em; padding:5px;">${t('btn_buy')}</button></div>
+                </div>
+            `;
+        });
+        content.innerHTML = html;
+        openModal("buyStockModal");
+    }
+    function buyStock(idx) {
+        const stock = availableStocks[idx];
+        const qty = parseInt(document.getElementById(`buyStockQty${idx}`).value);
+        const cost = qty * stock.price;
+        if(player.cash >= cost) {
+            player.cash -= cost;
+            if(!player.stocks[stock.name]) player.stocks[stock.name] = 0;
+            player.stocks[stock.name] += qty;
+            updateUI();
+            closeModal("buyStockModal");
+            showToast(`✅ ${qty}x ${stock.name} ${t('msg_bought')}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+    function openBuyEtfModal() {
+        document.getElementById("etfPriceDisplay").innerText = formatMoney(etfPrice);
+        openModal("buyEtfModal");
+    }
+    function buyEtf() {
+        const qty = parseInt(document.getElementById("buyEtfAmount").value);
+        const cost = qty * etfPrice;
+        if(player.cash >= cost) {
+            player.cash -= cost;
+            player.etfShares += qty;
+            updateUI();
+            closeModal("buyEtfModal");
+            showToast(`✅ ETF ${t('msg_bought')}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+    function openLoanModal() {
+        const maxLoan = player.cash * 3;
+        document.getElementById("loanContent").innerHTML = `
+            <p>${t('lbl_max_loan')}: ${formatMoney(maxLoan)}</p>
+            <p>${t('lbl_interest_rate')}: ${(player.loanInterestRate*100).toFixed(1)}% ${t('lbl_monthly')}</p>
+            <input type="number" id="loanAmount" placeholder="${t('lbl_amount')}" min="1000" step="1000">
+            <button onclick="takeLoan()">${t('btn_loan')}</button>
+        `;
+        openModal("loanModal");
+    }
+    function takeLoan() {
+        const amount = parseInt(document.getElementById("loanAmount").value);
+        const maxLoan = player.cash * 3;
+        if(amount > 0 && amount <= maxLoan) {
+            player.cash += amount;
+            player.loan += amount;
+            updateUI();
+            closeModal("loanModal");
+            showToast(`💰 ${t('msg_loan_taken')}: ${formatMoney(amount)}`, "success");
+        } else alert(t('msg_not_enough_money') + " / Limit");
+    }
+    function openRepayLoanModal() {
+        document.getElementById("repayLoanContent").innerHTML = `
+            <p>${t('lbl_current_debt')}: ${formatMoney(player.loan)}</p>
+            <input type="number" id="repayAmount" placeholder="${t('lbl_amount')}" min="100">
+            <button onclick="repayLoan()">${t('btn_repay')}</button>
+        `;
+        openModal("repayLoanModal");
+    }
+    function repayLoan() {
+        const amount = parseInt(document.getElementById("repayAmount").value);
+        if(amount > 0 && amount <= player.cash) {
+            const actualRepay = Math.min(amount, player.loan);
+            player.cash -= actualRepay;
+            player.loan -= actualRepay;
+            updateUI();
+            closeModal("repayLoanModal");
+            showToast(`📉 ${t('msg_loan_repaid')}: ${formatMoney(actualRepay)}`, "success");
+        } else alert(t('msg_not_enough_money'));
+    }
+
+    window.onload = startGame;
+</script>
+</body>
+</html>
